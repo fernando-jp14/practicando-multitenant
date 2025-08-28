@@ -1,12 +1,12 @@
 function downloadCashPDF() {
     const date = document.getElementById("date").value || new Date().toISOString().split("T")[0];
-    window.open(`/api/company/exports/pdf/resumen-caja/?date=${date}`, '_blank');
+    window.open(`/exports/pdf/resumen-caja/?date=${date}`, '_blank');
 }
 async function loadReports() {
     const date = document.getElementById("date").value || new Date().toISOString().split("T")[0];
 
     // 1️⃣ Citas por terapeuta
-    const res1 = await fetch(`/api/company/reports/appointments-per-therapist/?date=${date}`);
+    const res1 = await fetch(`/reports/appointments-per-therapist/?date=${date}`);
     const data1 = await res1.json();
 
     const appointmentsTable = document.querySelector("#appointmentsTable tbody");
@@ -26,7 +26,7 @@ async function loadReports() {
     }
 
     // 2️⃣ Caja diaria
-    const res2 = await fetch(`/api/company/reports/daily-cash/?date=${date}`);
+    const res2 = await fetch(`/reports/daily-cash/?date=${date}`);
     const data2 = await res2.json();
 
     const cashTable = document.querySelector("#cashTable tbody");
@@ -46,7 +46,7 @@ async function loadReports() {
     }
 
     // 3️⃣ Pacientes por terapeuta
-    const res3 = await fetch(`/api/company/reports/patients-by-therapist/?date=${date}`);
+    const res3 = await fetch(`/reports/patients-by-therapist/?date=${date}`);
     const data3 = await res3.json();
 
     const patientsDiv = document.getElementById("patientsByTherapist");
@@ -80,7 +80,7 @@ async function loadAppointmentsBetweenDates() {
         return;
     }
 
-    const res = await fetch(`/api/company/reports/appointments-between-dates/?start_date=${startDate}&end_date=${endDate}`);
+    const res = await fetch(`/reports/appointments-between-dates/?start_date=${startDate}&end_date=${endDate}`);
     const data = await res.json();
 
     const appointmentsBetweenTable = document.querySelector("#appointmentsBetweenTable tbody");
@@ -114,17 +114,17 @@ function exportAppointmentsExcel() {
     }
 
     // Abrir el enlace en el navegador para descargar el archivo
-    window.location.href = `/api/company/exports/excel/citas-rango/?start_date=${startDate}&end_date=${endDate}`;
+    window.location.href = `/exports/excel/citas-rango/?start_date=${startDate}&end_date=${endDate}`;
 }
 
 function downloadAppointmentsPDF() {
         const date = document.getElementById("date").value || new Date().toISOString().split("T")[0];
-        window.open(`/api/company/exports/pdf/citas-terapeuta/?date=${date}`, '_blank');
+        window.open(`/exports/pdf/citas-terapeuta/?date=${date}`, '_blank');
     }
 
 function downloadPatientsByTherapistPDF() {
     const date = document.getElementById("date").value || new Date().toISOString().split("T")[0];
-    window.open(`/api/company/exports/pdf/pacientes-terapeuta/?date=${date}`, '_blank');
+    window.open(`/exports/pdf/pacientes-terapeuta/?date=${date}`, '_blank');
 }
 
 // Cargar por defecto con la fecha de hoy
