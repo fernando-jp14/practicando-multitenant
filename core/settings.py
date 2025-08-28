@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'biblioteca',
     'reports',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -76,8 +77,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'multitenant-prueba',
+        'USER': 'root',
+        'PASSWORD': 'admin',
+        'HOST': 'localhost',  # o la IP de tu servidor MySQL
+        'PORT': '3306',       # puerto por defecto de MySQL
     }
 }
 
