@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'biblioteca',
+    'multitenant',
     'reports',
     'rest_framework',
 ]
@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'multitenant-prueba',
+        'NAME': 'prueba2',
         'USER': 'root',
         'PASSWORD': 'admin',
         'HOST': 'localhost',  # o la IP de tu servidor MySQL
@@ -129,4 +129,4 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Modelo de usuario personalizado
-AUTH_USER_MODEL = 'biblioteca.User'
+AUTH_USER_MODEL = 'multitenant.User'

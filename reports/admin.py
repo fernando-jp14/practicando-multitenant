@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import DocumentType, Patient, Therapist, PaymentType, Appointment
 
-from biblioteca.admin import TenantFilteredAdmin
+from multitenant.admin import TenantFilteredAdmin
 
 class TenantFilteredFKAdmin(TenantFilteredAdmin):
 	def formfield_for_foreignkey(self, db_field, request, **kwargs):

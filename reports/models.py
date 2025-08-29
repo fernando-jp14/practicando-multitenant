@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from biblioteca.models import Tenant
+from multitenant.models import Tenant
 #===============tipo de documento================
 class DocumentType(models.Model):
     name = models.CharField(max_length=255)
