@@ -118,7 +118,7 @@ class Appointment(models.Model):
         ]
     
     def __str__(self):
-        return f"Cita {self.id} - {self.appointment_date} {self.appointment_hour}"
+        return f"Cita - {self.appointment_date} {self.appointment_hour}"
     
     @property
     def is_completed(self):

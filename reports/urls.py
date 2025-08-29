@@ -7,7 +7,6 @@ urlpatterns = [
 ]
 
 reports_urlpatterns = [
-    #path('reports/statistics/', GetMetricsView.as_view(), name='statistics_metrics'),
     path('reports/appointments-per-therapist/', views.get_number_appointments_per_therapist, name='appointments_per_therapist'),
     path('reports/patients-by-therapist/', views.get_patients_by_therapist, name='patients_by_therapist'),
     path('reports/daily-cash/', views.get_daily_cash, name='daily_cash'),
@@ -23,7 +22,6 @@ export_urlpatterns = [
 
 views_urlpatterns = [
     path('reports/', views.reports_dashboard, name='reports'),
-    #path('statistics/', statistics_view, name='statistics')
 ]
 
 urlpatterns.extend(reports_urlpatterns)
