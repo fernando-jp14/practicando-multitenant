@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Libro, Author, Genero, Tenant, User
+from .models import Tenant, User
 
 class TenantFilteredAdmin(admin.ModelAdmin):
     exclude = []
@@ -41,7 +41,5 @@ class CustomUserAdmin(BaseUserAdmin):
     )
 
 admin.site.register(User, CustomUserAdmin)
-admin.site.register(Author, TenantFilteredAdmin)
-admin.site.register(Genero, TenantFilteredAdmin)
-admin.site.register(Libro, TenantFilteredAdmin)
+
 
