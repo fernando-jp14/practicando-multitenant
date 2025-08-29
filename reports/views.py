@@ -16,6 +16,10 @@ from .reports_serializers import (
 )
 from django_xhtml2pdf.utils import pdf_decorator
 import xlsxwriter
+from .decorators import require_tenant_access
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
 class ReportView(ListView):
@@ -24,6 +28,8 @@ class ReportView(ListView):
 
     def get_queryset(self):
         # Mostrar solo citas del tenant del usuario logueado
+        if self.request.user.is_superuser:
+            return Appointment.objects.all()
         return Appointment.objects.filter(tenant=self.request.user.tenant)
 
 report_service = ReportService()
@@ -40,7 +46,7 @@ class ReportAPIView:
             return JsonResponse(serializer.errors, status=400)
         
         # Obtener datos usando parámetros validados
-        data = report_service.get_appointments_count_by_therapist(serializer.validated_data)
+        data = report_service.get_appointments_count_by_therapist(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
         
@@ -65,7 +71,7 @@ class ReportAPIView:
             return JsonResponse(serializer.errors, status=400)
         
         # Obtener datos
-        data = report_service.get_patients_by_therapist(serializer.validated_data)
+        data = report_service.get_patients_by_therapist(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
         
@@ -82,7 +88,7 @@ class ReportAPIView:
             return JsonResponse(serializer.errors, status=400)
         
         # Obtener datos
-        data = report_service.get_daily_cash(serializer.validated_data)
+        data = report_service.get_daily_cash(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
         
@@ -99,7 +105,7 @@ class ReportAPIView:
             return JsonResponse(serializer.errors, status=400)
         
         # Obtener datos
-        data = report_service.get_appointments_between_dates(serializer.validated_data)
+        data = report_service.get_appointments_between_dates(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
         
@@ -120,7 +126,7 @@ class PDFExportView:
             return JsonResponse(serializer.errors, status=400)
         
         # Obtener datos
-        data = report_service.get_appointments_count_by_therapist(serializer.validated_data)
+        data = report_service.get_appointments_count_by_therapist(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
         
@@ -145,7 +151,7 @@ class PDFExportView:
             return JsonResponse(serializer.errors, status=400)
 
         # Obtener datos
-        data = report_service.get_patients_by_therapist(serializer.validated_data)
+        data = report_service.get_patients_by_therapist(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
 
@@ -177,7 +183,7 @@ class PDFExportView:
             return JsonResponse(serializer.errors, status=400)
         
         # Obtener datos
-        data = report_service.get_daily_cash(serializer.validated_data)
+        data = report_service.get_daily_cash(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
         
@@ -212,7 +218,7 @@ class ExcelExportView:
             return JsonResponse(serializer.errors, status=400)
         
         # Obtener datos
-        data = report_service.get_appointments_between_dates(serializer.validated_data)
+        data = report_service.get_appointments_between_dates(serializer.validated_data, request.user)
         if isinstance(data, dict) and "error" in data:
             return JsonResponse(data, status=400)
         
@@ -268,64 +274,6 @@ class ExcelExportView:
         )
         response['Content-Disposition'] = 'attachment; filename=citas.xlsx'
         return response
-        # Validar parámetros
-        serializer = DateParameterSerializer(data=request.GET)
-        if not serializer.is_valid():
-            return JsonResponse(serializer.errors, status=400)
-        
-        # Obtener datos
-        data = report_service.get_appointments_between_dates(serializer.validated_data)
-        if isinstance(data, dict) and "error" in data:
-            return JsonResponse(data, status=400)
-        
-        # Crear archivo Excel
-        output = io.BytesIO()
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('Citas')
-        
-        # Formato para encabezados
-        header_format = workbook.add_format({
-            'bold': True,
-            'bg_color': '#2c3e50',
-            'font_color': 'white',
-            'border': 1
-        })
-        
-        # Escribir encabezados
-        headers = ['Fecha', 'Hora', 'Terapeuta', 'Paciente', 'Pago', 'Tipo de Pago']
-        for col, header in enumerate(headers):
-            worksheet.write(0, col, header, header_format)
-        
-        # Escribir datos
-        for row, appointment in enumerate(data, start=1):
-            worksheet.write(row, 0, appointment.get('appointment_date', ''))
-            worksheet.write(row, 1, appointment.get('appointment_hour', ''))
-            worksheet.write(row, 2, appointment.get('therapist', ''))
-            worksheet.write(row, 3, appointment.get('patient', ''))
-            worksheet.write(row, 4, float(appointment.get('payment', 0)))
-            worksheet.write(row, 5, appointment.get('payment_type', ''))
-        
-        # Ajustar anchos de columna
-        worksheet.set_column('A:A', 15)
-        worksheet.set_column('B:B', 10)
-        worksheet.set_column('C:D', 30)
-        worksheet.set_column('E:E', 12)
-        worksheet.set_column('F:F', 15)
-        
-        workbook.close()
-        output.seek(0)
-        
-        # Generar nombre de archivo
-        start_date = serializer.validated_data.get('start_date', '')
-        end_date = serializer.validated_data.get('end_date', '')
-        filename = f'citas_{start_date}_a_{end_date}.xlsx'
-        
-        response = HttpResponse(
-            output,
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename={filename}'
-        return response
 
 
 # Instancias de las clases para mantener compatibilidad
@@ -335,6 +283,10 @@ excel_export = ExcelExportView()
 
 
 # Funciones que mantienen la interfaz original (no rompen funcionalidad) "# Versión función wrapper (capa de protección)"
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def get_number_appointments_per_therapist(request):
     try:
         return report_api.get_number_appointments_per_therapist(request)
@@ -347,6 +299,10 @@ def get_number_appointments_per_therapist(request):
             'traceback': traceback.format_exc()
         }, status=500)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def get_patients_by_therapist(request):
     try:
         return report_api.get_patients_by_therapist(request)
@@ -359,6 +315,10 @@ def get_patients_by_therapist(request):
             'traceback': traceback.format_exc()
         }, status=500)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def get_daily_cash(request):
     try:
         return report_api.get_daily_cash(request)
@@ -371,6 +331,10 @@ def get_daily_cash(request):
             'traceback': traceback.format_exc()
         }, status=500)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def get_appointments_between_dates(request):
     try:
         return report_api.get_appointments_between_dates(request)
@@ -384,17 +348,37 @@ def get_appointments_between_dates(request):
         }, status=500)
 
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def reports_dashboard(request):
     return render(request, 'reports.html')
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def pdf_citas_terapeuta(request):
     return pdf_export.pdf_citas_terapeuta(request)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def pdf_pacientes_terapeuta(request):
     return pdf_export.pdf_pacientes_terapeuta(request)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def pdf_resumen_caja(request):
     return pdf_export.pdf_resumen_caja(request)
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@require_tenant_access
 def exportar_excel_citas(request):
     return excel_export.exportar_excel_citas(request)

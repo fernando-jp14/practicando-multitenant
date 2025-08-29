@@ -7,13 +7,27 @@ from django.db import models
 class ReportService:
     """Responsable exclusivamente de consultas de base de datos para reportes."""
     
-    def get_appointments_count_by_therapist(self, validated_data):
+    def _filter_by_tenant(self, queryset, user):
+        """
+        Filtra el queryset por tenant del usuario.
+        - Si es superusuario, no filtra (ve todos los datos)
+        - Si es usuario normal, solo ve datos de su tenant
+        """
+        if user.is_superuser:
+            return queryset
+        return queryset.filter(tenant=user.tenant)
+    
+    def get_appointments_count_by_therapist(self, validated_data, user):
         """Obtiene el conteo de citas por terapeuta para una fecha dada."""
         query_date = validated_data.get("date")
         
+        # Filtrar terapeutas por tenant
+        therapists_queryset = Therapist.objects
+        therapists_queryset = self._filter_by_tenant(therapists_queryset, user)
+        
         # Consultar terapeutas con la cantidad de citas
         therapists = (
-            Therapist.objects
+            therapists_queryset
             .annotate(
                 appointments_count=Count(
                     "appointment",
@@ -32,17 +46,17 @@ class ReportService:
             "total_appointments_count": total_appointments
         }
     
-    def get_patients_by_therapist(self, validated_data):
+    def get_patients_by_therapist(self, validated_data, user):
         """Obtiene pacientes agrupados por terapeuta para una fecha dada."""
         query_date = validated_data.get("date")
         
+        # Filtrar citas por tenant
+        appointments_queryset = Appointment.objects.select_related("patient", "therapist")
+        appointments_queryset = self._filter_by_tenant(appointments_queryset, user)
+        
         # Consultar citas para la fecha
-        appointments = (
-            Appointment.objects
-            .select_related("patient", "therapist")
-            .filter(
-                appointment_date=query_date
-            )
+        appointments = appointments_queryset.filter(
+            appointment_date=query_date
         )
         
         # Procesar datos
@@ -98,18 +112,21 @@ class ReportService:
         
         return list(report.values())
     
-    def get_daily_cash(self, validated_data):
+    def get_daily_cash(self, validated_data, user):
         """Obtiene el resumen diario de efectivo detallado por cita."""
         query_date = validated_data.get("date")
         
+        # Filtrar pagos por tenant
+        payments_queryset = Appointment.objects.filter(
+            appointment_date=query_date,
+            payment__isnull=False,
+            payment_type__isnull=False
+        )
+        payments_queryset = self._filter_by_tenant(payments_queryset, user)
+        
         # Consultar pagos del día
         payments = (
-            Appointment.objects
-            .filter(
-                appointment_date=query_date,
-                payment__isnull=False,
-                payment_type__isnull=False
-            )
+            payments_queryset
             .values(
                 'id',
                 'payment',
@@ -132,15 +149,18 @@ class ReportService:
         
         return result
     
-    def get_appointments_between_dates(self, validated_data):
+    def get_appointments_between_dates(self, validated_data, user):
         """Obtiene citas entre dos fechas dadas."""
         start_date = validated_data.get("start_date")
         end_date = validated_data.get("end_date")
         
+        # Filtrar citas por tenant
+        appointments_queryset = Appointment.objects.select_related("patient", "therapist")
+        appointments_queryset = self._filter_by_tenant(appointments_queryset, user)
+        
         # Consultar citas
         appointments = (
-            Appointment.objects
-            .select_related("patient", "therapist")
+            appointments_queryset
             .filter(
                 appointment_date__gte=start_date,
                 appointment_date__lte=end_date
